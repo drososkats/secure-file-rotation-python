@@ -1,0 +1,14 @@
+#Python artifacts
+
+__pycache__/
+*.py[cod]
+
+# Virtual Environment
+venv/
+.venv/
+
+# Project specific
+*.enc
+*.key
+tests/test_files/
+.DS_Store
