@@ -40,9 +40,46 @@ class SecureFileProtector:
             iterations=1, # Master key is already strong, 1 iteration is sufficient
         )
         return kdf.derive(master_key)
+    
+    def protect_file(self, file_path: str, passphrase: str):
+        # Generate unique random values for this ops
+        # Salt is for the Master Key, Nonce is for the File Key (rotation)
+        salt = os.urandom(16)
+        nonce = os.urandom(12) # Standard size for GCM and ChaCha20Poly1305
+
+        # Derive the keys using our KDF Engine 
+        master_key = self._derive_master_key(passphrase, salt)
+        file_key = self._derive_file_key(master_key, nonce)
+
+        # Read the original content
+        with open(file_path, "rb") as f:
+            plaintext = f.read()
+        
+        # Initialize the chosen algorithm (Cryptography Agility)
+        if self.algorithm == "AES-GCM":
+            cipher = AESGCM(file_key)
+        else:
+            cipher = ChaCha20Poly1305(file_key)
+        
+        # Encrypt and get the Integrity TAG (AEAD)
+        ciphertext = cipher.encrypt(nonce, plaintext, None)
+
+        #Build the protected file (Header + Ciphertext) - store them for the decryption 
+        with open(file_path + ".enc", "wb") as f:
+            f.write(salt)  # 16 bytes
+            f.write(nonce) # 12 bytes
+            f.write(ciphertext)
+
+        print(f"[+] File '{file_path}' is now protected.")
+        print(f" Algorithm used: {self.algorithm}")
+
 
 if __name__ == "__main__":
     # Quick sanity check
     protector = SecureFileProtector(algorithm="AES-GCM", key_size=256)
     #protector = SecureFileProtector(algorithm="CHACHA20", key_size=128)
-    print(f"[+] Engine initialized. Algorithm: {protector.algorithm}, Key size: {protector.key_size_bits}-bit")
+    #print(f"[+] Engine initialized. Algorithm: {protector.algorithm}, Key size: {protector.key_size_bits}-bit")
+    # Test the encryption 
+    test_password = "my_password"
+    protector.protect_file("secret.txt", test_password)
+
