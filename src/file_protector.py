@@ -73,6 +73,42 @@ class SecureFileProtector:
         print(f"[+] File '{file_path}' is now protected.")
         print(f" Algorithm used: {self.algorithm}")
 
+    def unprotect_file(self, file_path: str, passphrase: str):
+        # Open the protected file and read the Header metadata
+        with open(file_path, "rb") as f:
+            salt = f.read(16)      # Read the exact 16 bytes we stored
+            nonce = f.read(12)     # Read the exact 12 bytes
+            ciphertext = f.read()  # Everything else is the encrypted data + tag
+            
+        # Re-derive the keys using the salt/nonce from the file (Key Rotation logic)
+        master_key = self._derive_master_key(passphrase, salt)
+        file_key = self._derive_file_key(master_key, nonce)
+        
+        # Setup the algorithm for decryption (Crypto-Agility)
+        if self.algorithm == "AES-GCM":
+            cipher = AESGCM(file_key)
+        else:
+            cipher = ChaCha20Poly1305(file_key)
+            
+        try:
+            # Decrypt and Verify Integrity (AEAD process)
+            # If a single bit has changed, this will raise an InvalidTag exception
+            decrypted_data = cipher.decrypt(nonce, ciphertext, None)
+            
+            # Restore the file to its original state
+            output_path = file_path.replace(".enc", "")
+            # We add a prefix for now to see both files in our folder
+            restored_file = "restored_" + output_path 
+            
+            with open(restored_file, "wb") as f:
+                f.write(decrypted_data)
+                
+            print(f"[+] Integrity Verified! File restored as: {restored_file}")
+            
+        except InvalidTag:
+            # This is the "Integrity Failure" branch of your diagram
+            print("[!] Critical Error: Integrity check failed!")
+            print("    Possible causes: Wrong password or file tampering detected.")
 
 if __name__ == "__main__":
     # Quick sanity check
@@ -81,5 +117,6 @@ if __name__ == "__main__":
     #print(f"[+] Engine initialized. Algorithm: {protector.algorithm}, Key size: {protector.key_size_bits}-bit")
     # Test the encryption 
     test_password = "my_password"
-    protector.protect_file("secret.txt", test_password)
+    #protector.protect_file("secret.txt", test_password)
+    protector.unprotect_file("secret.txt.enc", test_password)
 
