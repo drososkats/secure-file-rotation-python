@@ -272,105 +272,112 @@ class SecureFileProtector:
 
 # --- CLI MENU SECTION ---
 if __name__ == "__main__":
-    print("\n" + "═"*45)
-    print("           FILE PROTECTION TOOL")
-    print("═"*45)
-    
-    # Mode Selection with Validation
-    while True:
+    while True:  # Κύριο Loop της εφαρμογής
+        print("\n" + "═"*45)
+        print("           FILE PROTECTION TOOL")
+        print("═"*45)
+        
+        # Mode Selection
         print("\n[!] Select Mode:")
         print(" 1. Confidentiality (AES-CTR)")
         print(" 2. Integrity (HMAC-SHA256)")
         print(" 3. Confidentiality & Integrity (Combined)")
         print(" 4. Rotate Key / Change Password")
-        mode_choice = input("\nEnter selection (1-4): ")
-        if mode_choice in ["1", "2", "3", "4"]:
-            break
-        print("[!] Invalid selection. Please choose 1-4.")
-    
-    # Algorithm Selection (Only for Combined Protection or Key Rotation)
-    selected_algo = "AES-GCM" 
-    if mode_choice in ["3", "4"]:
-        while True:
-            print("\n[!] Select Algorithm:")
-            print(" 1. AES-GCM")
-            print(" 2. ChaCha20-Poly1305")
-            algo_input = input("\nEnter selection (1-2): ")
-            if algo_input in ["1", "2"]:
-                selected_algo = "AES-GCM" if algo_input == "1" else "ChaCha20-Poly1305"
-                break
-            print("[!] Invalid selection. Please choose 1 or 2.")
-
-    # Action Selection (Protect vs Unprotect)
-    action = None
-    if mode_choice != "4":
-        while True:
-            print("\nChoose Action:")
-            print(" [1] Protect/Sign")
-            print(" [2] Unprotect/Verify")
-            action = input("\nEnter selection (1-2): ")
-            if action in ["1", "2"]:
-                break
-            print("[!] Invalid selection. Please choose 1 or 2.")
-
-    # Secure Deletion Option (Only for Protection/Signing actions)
-    delete_original = False
-    if action == "1":
-        while True:
-            choice = input("\nDelete original file after operation? (y/n): ").lower()
-            if choice in ['y', 'n']:
-                delete_original = (choice == 'y')
-                break
-            print("[!] Invalid input. Please enter 'y' or 'n'.")
-    
-    # Security Level Selection (λ = 128 or 256 bits)
-    while True:
-        print("\n[!] Security Level:")
-        print(" [1] 128-bit")
-        print(" [2] 256-bit")
-        k_choice = input("\nEnter selection (1-2): ")
-        if k_choice in ["1", "2"]:
-            k_size = 128 if k_choice == "1" else 256
-            break
-        print("[!] Invalid selection. Please choose 1 or 2.")
-    
-    # Initialize the protector class based on user choices
-    if mode_choice == "1":
-        selected_algo = "AES-CTR"
-    elif mode_choice == "2":
-        selected_algo = "HMAC"
+        print(" 5. EXIT")
         
-    protector = SecureFileProtector(algorithm=selected_algo, key_size=k_size)
-    
-    # File Path Entry and Execution Logic
-    file_path = input("\nEnter file path: ")
-    
-    if os.path.exists(file_path):
+        mode_choice = input("\nEnter selection (1-5): ")
+
+        # ΕΞΟΔΟΣ: Αν ο χρήστης επιλέξει 5, κλείνει το πρόγραμμα αμέσως
+        if mode_choice == "5":
+            print("\n[+] Exiting... Goodbye!")
+            break
+            
+        if mode_choice not in ["1", "2", "3", "4"]:
+            print("[!] Invalid selection. Please choose 1-5.")
+            continue
+
+        # Algorithm Selection (Μόνο για Mode 3 ή 4)
+        selected_algo = "AES-GCM" 
+        if mode_choice in ["3", "4"]:
+            while True:
+                print("\n[!] Select Algorithm:")
+                print(" 1. AES-GCM")
+                print(" 2. ChaCha20-Poly1305")
+                algo_input = input("\nEnter selection (1-2): ")
+                if algo_input in ["1", "2"]:
+                    selected_algo = "AES-GCM" if algo_input == "1" else "ChaCha20-Poly1305"
+                    break
+                print("[!] Invalid selection. Please choose 1 or 2.")
+
+        # Action Selection (Μόνο αν δεν είναι Key Rotation)
+        action = None
+        if mode_choice != "4":
+            while True:
+                print("\nChoose Action:")
+                print(" [1] Protect/Sign")
+                print(" [2] Unprotect/Verify")
+                action = input("\nEnter selection (1-2): ")
+                if action in ["1", "2"]:
+                    break
+                print("[!] Invalid selection. Please choose 1 or 2.")
+
+        # Secure Deletion Option
+        delete_original = False
+        if action == "1":
+            while True:
+                choice = input("\nDelete original file after operation? (y/n): ").lower()
+                if choice in ['y', 'n']:
+                    delete_original = (choice == 'y')
+                    break
+                print("[!] Invalid input. Please enter 'y' or 'n'.")
+        
+        # Security Level Selection
+        while True:
+            print("\n[!] Security Level:")
+            print("[1] 128-bit")
+            print("[2] 256-bit")
+            k_choice = input("\nEnter selection (1-2): ")
+            if k_choice in ["1", "2"]:
+                k_size = 128 if k_choice == "1" else 256
+                break
+            print("[!] Invalid selection. Please choose 1 or 2.")
+        
+        # Initialize the protector
         if mode_choice == "1":
-            pwd = getpass.getpass("Password: ")
-            if action == "1":
-                protector.protect_confidentiality_only(file_path, pwd, delete_after=delete_original)
-            else:
-                protector.unprotect_confidentiality_only(file_path, pwd)
-                
+            selected_algo = "AES-CTR"
         elif mode_choice == "2":
-            pwd = getpass.getpass("Password: ")
-            if action == "1":
-                protector.sign_file(file_path, pwd, delete_after=delete_original)
-            else:
-                protector.verify_file(file_path, pwd)
-                
-        elif mode_choice == "3":
-            pwd = getpass.getpass("Password: ")
-            if action == "1":
-                protector.protect_file(file_path, pwd, delete_after=delete_original)
-            else:
-                protector.unprotect_file(file_path, pwd)
-                
-        elif mode_choice == "4":
-            old_p = getpass.getpass("Old Password: ")
-            new_p = getpass.getpass("New Password: ")
-            # Key rotation triggers re-encryption with a fresh salt and new master key
-            protector.rotate_key(file_path, old_p, new_p)
-    else:
-        print("[!] File not found. Please check the path and try again.")
+            selected_algo = "HMAC"
+            
+        protector = SecureFileProtector(algorithm=selected_algo, key_size=k_size)
+        
+        # Execution Logic
+        file_path = input("\nEnter file path: ")
+        
+        if os.path.exists(file_path):
+            if mode_choice == "1":
+                pwd = getpass.getpass("Password: ")
+                if action == "1":
+                    protector.protect_confidentiality_only(file_path, pwd, delete_after=delete_original)
+                else:
+                    protector.unprotect_confidentiality_only(file_path, pwd)
+                    
+            elif mode_choice == "2":
+                pwd = getpass.getpass("Password: ")
+                if action == "1":
+                    protector.sign_file(file_path, pwd, delete_after=delete_original)
+                else:
+                    protector.verify_file(file_path, pwd)
+                    
+            elif mode_choice == "3":
+                pwd = getpass.getpass("Password: ")
+                if action == "1":
+                    protector.protect_file(file_path, pwd, delete_after=delete_original)
+                else:
+                    protector.unprotect_file(file_path, pwd)
+                    
+            elif mode_choice == "4":
+                old_p = getpass.getpass("Old Password: ")
+                new_p = getpass.getpass("New Password: ")
+                protector.rotate_key(file_path, old_p, new_p)
+        else:
+            print("[!] File not found. Please check the path and try again.")
