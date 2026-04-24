@@ -272,7 +272,7 @@ class SecureFileProtector:
 
 # --- CLI MENU SECTION ---
 if __name__ == "__main__":
-    while True:  # Κύριο Loop της εφαρμογής
+    while True: 
         print("\n" + "═"*45)
         print("           FILE PROTECTION TOOL")
         print("═"*45)
@@ -287,7 +287,7 @@ if __name__ == "__main__":
         
         mode_choice = input("\nEnter selection (1-5): ")
 
-        # ΕΞΟΔΟΣ: Αν ο χρήστης επιλέξει 5, κλείνει το πρόγραμμα αμέσως
+        #exit
         if mode_choice == "5":
             print("\n[+] Exiting... Goodbye!")
             break
@@ -296,7 +296,7 @@ if __name__ == "__main__":
             print("[!] Invalid selection. Please choose 1-5.")
             continue
 
-        # Algorithm Selection (Μόνο για Mode 3 ή 4)
+        # Algorithm Selection
         selected_algo = "AES-GCM" 
         if mode_choice in ["3", "4"]:
             while True:
@@ -309,7 +309,7 @@ if __name__ == "__main__":
                     break
                 print("[!] Invalid selection. Please choose 1 or 2.")
 
-        # Action Selection (Μόνο αν δεν είναι Key Rotation)
+        # Action Selection
         action = None
         if mode_choice != "4":
             while True:
